@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create QR Code</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto p-4 max-w-md">
+        <h2 class="text-2xl font-bold mb-4 text-center">Create New Student QR Code</h2>
+        <a href="/" class="inline-block mb-4 text-blue-500 hover:underline">&larr; Back to Admin Panel</a>
+        <form method="POST" class="bg-white p-6 rounded shadow space-y-4">
+            <div>
+                <label for="id" class="block text-sm font-medium text-gray-700">Student ID</label>
+                <input type="text" name="id" id="id" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" required>
+            </div>
+            <div>
+                <label for="name" class="block text-sm font-medium text-gray-700">Student Name</label>
+                <input type="text" name="name" id="name" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" required>
+            </div>
+            <div>
+                <label for="photo_path" class="block text-sm font-medium text-gray-700">Photo Path (e.g., photos/student.jpg)</label>
+                <input type="text" name="photo_path" id="photo_path" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" required>
+            </div>
+            <button type="submit" class="w-full bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">Generate QR Code</button>
+        </form>
+        {% if error %}
+        <p class="mt-4 text-red-500 text-center">{{ error }}</p>
+        {% endif %}
+        {% if success %}
+        <p class="mt-4 text-green-500 text-center">{{ success }}</p>
+        {% endif %}
+    </div>
+</body>
+</html>

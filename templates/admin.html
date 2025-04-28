@@ -30,7 +30,10 @@
                 <li class="text-gray-600">No students present yet.</li>
                 {% endfor %}
             </ul>
-            <a href="/export_excel" class="mt-4 inline-block bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Export to Excel</a>
+            <div class="mt-4 flex space-x-4">
+                <a href="/export_excel" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Export to Excel</a>
+                <a href="/create_qrcode" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">Create New QR Code</a>
+            </div>
         </div>
     </div>
 </body>

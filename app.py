@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, send_file
+from flask import Flask, render_template, request, jsonify, send_file, redirect, url_for
 import qrcode
 import csv
 import os
@@ -12,13 +12,20 @@ app = Flask(__name__)
 # Configuration
 CSV_FILE = 'students.csv'  # CSV with columns: id,name,photo_path
 PRESENT_FILE = 'present.txt'  # Temporary storage for present student IDs
+QR_CODES_DIR = 'qrcodes'  # Directory for QR code images
 HOST_IP = '0.0.0.0'  # Update to your local IP for LAN access
 PORT = 5000
 BASE_URL = f'http://{HOST_IP}:{PORT}'
 
-# Initialize present students file
+# Ensure directories exist
 if not os.path.exists(PRESENT_FILE):
     open(PRESENT_FILE, 'w').close()
+if not os.path.exists(QR_CODES_DIR):
+    os.makedirs(QR_CODES_DIR)
+if not os.path.exists(CSV_FILE):
+    with open(CSV_FILE, 'w', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(['id', 'name', 'photo_path'])
 
 
 # Load students from CSV
@@ -47,8 +54,19 @@ def get_present_students():
     return present
 
 
+# Generate QR code for a student ID
+def generate_qr_code(student_id):
+    qr = qrcode.QRCode(version=1, box_size=10, border=4)
+    qr.add_data(student_id)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="black", back_color="white")
+    qr_path = os.path.join(QR_CODES_DIR, f'{student_id}.png')
+    img.save(qr_path)
+    return qr_path
+
+
 # Generate QR code for mobile page
-def generate_qr_code():
+def generate_mobile_qr_code():
     qr = qrcode.QRCode(version=1, box_size=10, border=4)
     qr.add_data(f'{BASE_URL}/mobile')
     qr.make(fit=True)
@@ -60,7 +78,7 @@ def generate_qr_code():
 
 @app.route('/')
 def admin():
-    qr_code = generate_qr_code()
+    qr_code = generate_mobile_qr_code()
     students = load_students()
     present_ids = get_present_students()
     present_students = [
@@ -73,6 +91,35 @@ def admin():
 @app.route('/mobile')
 def mobile():
     return render_template('mobile.html')
+
+
+@app.route('/create_qrcode', methods=['GET', 'POST'])
+def create_qrcode():
+    if request.method == 'POST':
+        student_id = request.form.get('id')
+        name = request.form.get('name')
+        photo_path = request.form.get('photo_path')
+
+        # Validate inputs
+        if not student_id or not name or not photo_path:
+            return render_template('create_qrcode.html', error="All fields are required")
+
+        # Check if ID already exists
+        students = load_students()
+        if student_id in students:
+            return render_template('create_qrcode.html', error="Student ID already exists")
+
+        # Append to CSV
+        with open(CSV_FILE, 'a', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow([student_id, name, photo_path])
+
+        # Generate QR code
+        generate_qr_code(student_id)
+
+        return render_template('create_qrcode.html', success=f"QR code generated for {name} (ID: {student_id})")
+
+    return render_template('create_qrcode.html')
 
 
 @app.route('/get_student/<student_id>')

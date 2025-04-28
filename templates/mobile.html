@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Mobile Scanner</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
@@ -10,7 +10,12 @@
 <body class="bg-gray-100">
     <div class="container mx-auto p-4">
         <h2 class="text-2xl font-bold mb-4 text-center">Scan Student QR Code</h2>
-        <div id="reader" class="w-full max-w-md mx-auto"></div>
+        <div id="status-message" class="text-center mb-4">
+            <p id="status-text" class="text-red-500"></p>
+            <button id="request-camera" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 hidden">Try Camera Access</button>
+        </div>
+        <div id="reader" class="w-full max-w-md mx-auto hidden"></div>
+        <div id="error-message" class="text-red-500 text-center hidden"></div>
         <div id="student-info" class="hidden mt-4 bg-white p-4 rounded shadow max-w-md mx-auto">
             <img id="student-photo" src="" alt="Student Photo" class="w-32 h-32 object-cover mx-auto rounded">
             <p id="student-name" class="text-center font-semibold mt-2"></p>
@@ -24,6 +29,10 @@
     <script>
         const html5QrCode = new Html5Qrcode("reader");
         const studentInfo = document.getElementById('student-info');
+        const errorMessage = document.getElementById('error-message');
+        const statusText = document.getElementById('status-text');
+        const requestCameraBtn = document.getElementById('request-camera');
+        const readerDiv = document.getElementById('reader');
         const studentPhoto = document.getElementById('student-photo');
         const studentName = document.getElementById('student-name');
         const studentId = document.getElementById('student-id');
@@ -31,43 +40,60 @@
         const acceptBtn = document.getElementById('accept-btn');
         let currentStudentId = null;
 
-        html5QrCode.start(
-            { facingMode: "environment" },
-            { fps: 10, qrbox: { width: 250, height: 250 } },
-            (decodedText) => {
-                fetch(`/get_student/${decodedText}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.error) {
-                            alert(data.error);
-                            return;
-                        }
-                        currentStudentId = data.id;
-                        studentPhoto.src = `data:image/jpeg;base64,${data.photo}`;
-                        studentName.textContent = data.name;
-                        studentId.textContent = `ID: ${data.id}`;
-                        studentInfo.classList.remove('hidden');
-                        html5QrCode.stop();
-                    })
-                    .catch(err => alert('Error fetching student data'));
-            },
-            (error) => {
-                // Scan error, ignore
-            }
-        ).catch(err => alert('Error starting QR scanner'));
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.classList.remove('hidden');
+            setTimeout(() => errorMessage.classList.add('hidden'), 5000);
+        }
 
-        cancelBtn.addEventListener('click', () => {
-            studentInfo.classList.add('hidden');
-            currentStudentId = null;
+        function updateStatus(message, isError = true) {
+            statusText.textContent = message;
+            statusText.classList.toggle('text-red-500', isError);
+            statusText.classList.toggle('text-green-500', !isError);
+        }
+
+        function checkCameraSupport() {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                updateStatus('Camera API is not supported by your browser. Please try another browser or update Chrome.');
+                return false;
+            }
+            return true;
+        }
+
+        async function requestCameraAccess() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                updateStatus('Camera access granted.', false);
+                requestCameraBtn.classList.add('hidden');
+                readerDiv.classList.remove('hidden');
+                // Stop the stream to free resources
+                stream.getTracks().forEach(track => track.stop());
+                startScanner();
+            } catch (err) {
+                console.error('Error accessing camera:', err);
+                if (err.name === 'NotAllowedError') {
+                    updateStatus('Camera access denied. Please enable camera permissions in Chrome settings and try again.');
+                } else if (err.name === 'NotFoundError') {
+                    updateStatus('No camera found on your device. Please ensure a camera is available.');
+                } else {
+                    updateStatus('Error accessing camera: ' + err.message);
+                }
+                requestCameraBtn.classList.remove('hidden');
+            }
+        }
+
+        function startScanner() {
             html5QrCode.start(
-                { facingMode: "environment" },
+                { facingMode: 'environment' },
                 { fps: 10, qrbox: { width: 250, height: 250 } },
                 (decodedText) => {
                     fetch(`/get_student/${decodedText}`)
                         .then(response => response.json())
-                        .then(data => {
+                        .
+
+then(data => {
                             if (data.error) {
-                                alert(data.error);
+                                showError(data.error);
                                 return;
                             }
                             currentStudentId = data.id;
@@ -75,10 +101,32 @@
                             studentName.textContent = data.name;
                             studentId.textContent = `ID: ${data.id}`;
                             studentInfo.classList.remove('hidden');
-                            html5QrCode.stop();
+                            readerDiv.classList.add('hidden');
+                            html5QrCode.stop().catch(err => console.error('Error stopping scanner:', err));
+                        })
+                        .catch(err => {
+                            console.error('Error fetching student data:', err);
+                            showError('Error fetching student data');
                         });
+                },
+                (error) => {
+                    // Ignore scan errors
                 }
-            );
+            ).catch(err => {
+                console.error('Error starting QR scanner:', err);
+                showError('Failed to start QR scanner: ' + err.message);
+                updateStatus('Failed to start QR scanner. Please try again or check permissions.');
+                requestCameraBtn.classList.remove('hidden');
+            });
+        }
+
+        requestCameraBtn.addEventListener('click', requestCameraAccess);
+
+        cancelBtn.addEventListener('click', () => {
+            studentInfo.classList.add('hidden');
+            currentStudentId = null;
+            readerDiv.classList.remove('hidden');
+            startScanner();
         });
 
         acceptBtn.addEventListener('click', () => {
@@ -87,35 +135,26 @@
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
-                            alert('Student marked as present');
+                            showError('Student marked as present');
                             studentInfo.classList.add('hidden');
                             currentStudentId = null;
-                            html5QrCode.start(
-                                { facingMode: "environment" },
-                                { fps: 10, qrbox: { width: 250, height: 250 } },
-                                (decodedText) => {
-                                    fetch(`/get_student/${decodedText}`)
-                                        .then(response => response.json())
-                                        .then(data => {
-                                            if (data.error) {
-                                                alert(data.error);
-                                                return;
-                                            }
-                                            currentStudentId = data.id;
-                                            studentPhoto.src = `data:image/jpeg;base64,${data.photo}`;
-                                            studentName.textContent = data.name;
-                                            studentId.textContent = `ID: ${data.id}`;
-                                            studentInfo.classList.remove('hidden');
-                                            html5QrCode.stop();
-                                        });
-                                }
-                            );
+                            readerDiv.classList.remove('hidden');
+                            startScanner();
                         } else {
-                            alert('Error marking student as present');
+                            showError('Error marking student as present');
                         }
+                    })
+                    .catch(err => {
+                        console.error('Error marking present:', err);
+                        showError('Error marking student as present');
                     });
             }
         });
+
+        // Initialize on page load
+        if (checkCameraSupport()) {
+            requestCameraAccess();
+        }
     </script>
 </body>
 </html>
