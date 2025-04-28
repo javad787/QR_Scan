@@ -1,29 +1,37 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Admin Panel - Attendance</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-  <h1>Admin Panel</h1>
-  <p>Mobile users, open: <b>http://<your-ip>:5000/scanner</b> on your phone!</p>
-
-  <h2>Present Students</h2>
-  <ul>
-    {% for student in present %}
-      <li>{{ student.name }}</li>
-    {% else %}
-      <li>No one yet!</li>
-    {% endfor %}
-  </ul>
-
-  <br>
-  <a href="/download"><button>Download Attendance Excel</button></a>
-
-  <script>
-    // Auto-refresh every 5 seconds
-    setInterval(() => {
-      location.reload();
-    }, 5000);
-  </script>
+<body class="bg-gray-100">
+    <div class="container mx-auto p-4 flex flex-col md:flex-row gap-4">
+        <!-- QR Code Section -->
+        <div class="w-full md:w-1/2 bg-white p-6 rounded shadow">
+            <h2 class="text-2xl font-bold mb-4">Scan QR Code</h2>
+            <img src="data:image/png;base64,{{ qr_code }}" alt="QR Code" class="mx-auto">
+            <p class="text-center mt-4">Scan this QR code with a mobile device to open the scanning page.</p>
+        </div>
+        <!-- Present Students List -->
+        <div class="w-full md:w-1/2 bg-white p-6 rounded shadow">
+            <h2 class="text-2xl font-bold mb-4">Present Students</h2>
+            <ul class="space-y-4">
+                {% for student in present_students %}
+                <li class="flex items-center space-x-4">
+                    <img src="{{ student.photo_path }}" alt="{{ student.name }}" class="w-12 h-12 object-cover rounded">
+                    <div>
+                        <p class="font-semibold">{{ student.name }}</p>
+                        <p class="text-gray-600">ID: {{ student.id }}</p>
+                    </div>
+                </li>
+                {% else %}
+                <li class="text-gray-600">No students present yet.</li>
+                {% endfor %}
+            </ul>
+            <a href="/export_excel" class="mt-4 inline-block bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Export to Excel</a>
+        </div>
+    </div>
 </body>
 </html>
