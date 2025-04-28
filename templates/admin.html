@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Admin Panel - Attendance</title>
+</head>
+<body>
+  <h1>Admin Panel</h1>
+  <p>Mobile users, open: <b>http://<your-ip>:5000/scanner</b> on your phone!</p>
+
+  <h2>Present Students</h2>
+  <ul>
+    {% for student in present %}
+      <li>{{ student.name }}</li>
+    {% else %}
+      <li>No one yet!</li>
+    {% endfor %}
+  </ul>
+
+  <br>
+  <a href="/download"><button>Download Attendance Excel</button></a>
+
+  <script>
+    // Auto-refresh every 5 seconds
+    setInterval(() => {
+      location.reload();
+    }, 5000);
+  </script>
+</body>
+</html>

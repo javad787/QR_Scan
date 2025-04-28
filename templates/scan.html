@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>QR Code Scanner</title>
+  <script src="/static/html5-qrcode.min.js"></script>
+  <style>
+    #modal {
+      display: none;
+      position: fixed;
+      top: 20%;
+      left: 10%;
+      width: 80%;
+      background: white;
+      padding: 20px;
+      border: 2px solid black;
+      text-align: center;
+      z-index: 100;
+    }
+    #modal img {
+      max-width: 100%;
+      height: auto;
+    }
+  </style>
+</head>
+<body>
+  <h1>Scan QR Code</h1>
+  <div id="reader" style="width: 300px;"></div>
+
+  <div id="modal">
+    <h2 id="studentName"></h2>
+    <p id="studentNumber"></p>
+    <img id="studentPhoto" src="">
+    <br><br>
+    <button onclick="submitAttendance()">Submit</button>
+    <button onclick="closeModal()">Cancel</button>
+  </div>
+
+  <script>
+    let currentId = '';
+
+    function onScanSuccess(decodedText, decodedResult) {
+      fetch('/mark_present', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: decodedText })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.status === 'success') {
+          currentId = data.number;
+          document.getElementById('studentName').innerText = data.name;
+          document.getElementById('studentNumber').innerText = "ID: " + data.number;
+          document.getElementById('studentPhoto').src = data.photo;
+          openModal();
+        } else {
+          alert('Student not found!');
+        }
+      });
+    }
+
+    function openModal() {
+      document.getElementById('modal').style.display = 'block';
+    }
+
+    function closeModal() {
+      document.getElementById('modal').style.display = 'none';
+      currentId = '';
+    }
+
+    function submitAttendance() {
+      if (currentId) {
+        fetch('/submit_attendance', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: currentId })
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.status === 'marked') {
+            alert('Attendance Marked!');
+          } else {
+            alert('Error marking attendance.');
+          }
+          closeModal();
+        });
+      }
+    }
+
+    new Html5Qrcode("reader").start(
+      { facingMode: "environment" },
+      { fps: 10, qrbox: 250 },
+      onScanSuccess
+    );
+  </script>
+</body>
+</html>
