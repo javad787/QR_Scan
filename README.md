@@ -1,5 +1,3 @@
-Of course! Here’s a clean and professional **README.md** you can directly use for your GitHub project:
-
 ---
 
 # 📚 QR Code Attendance System (Local Web App)
@@ -123,15 +121,6 @@ This project is licensed under the [MIT License](LICENSE).
 
 ## ✍️ Author
 
-Built with ❤️ by [Your Name]
+Built with ❤️ by [Javad78702]
 
 ---
-
-# ✅ Done!
-
----
-
----
-  
-Would you also like me to give you a ready **GitHub commit message** and `.gitignore` file so your repo looks professional too? 🚀  
-(Just say: "yes, please")
